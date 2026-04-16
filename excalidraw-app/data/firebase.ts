@@ -272,9 +272,7 @@ export const loadFilesFromFirebase = async (
   await Promise.all(
     [...new Set(filesIds)].map(async (id) => {
       try {
-        const url = `${API_URL}/api/files/${encodeURIComponent(
-          prefix.replace(/^\//, ""),
-        )}/${id}`;
+        const url = `${API_URL}/api/files/${encodeURIComponent(prefix)}/${id}`;
         const response = await fetch(url);
         if (response.status < 400) {
           const arrayBuffer = await response.arrayBuffer();
