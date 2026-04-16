@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} node:18 AS build
+FROM --platform=${BUILDPLATFORM} node:20 AS build
 
 WORKDIR /opt/node_app
 
@@ -10,6 +10,11 @@ RUN --mount=type=cache,target=/root/.cache/yarn \
     npm_config_target_arch=${TARGETARCH} yarn --network-timeout 600000
 
 ARG NODE_ENV=production
+ARG VITE_APP_API_URL
+ARG VITE_APP_BACKEND_V2_GET_URL
+ARG VITE_APP_BACKEND_V2_POST_URL
+ARG VITE_APP_WS_SERVER_URL
+ARG VITE_APP_FIREBASE_CONFIG={}
 
 RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
 
