@@ -1,205 +1,140 @@
-<a href="https://excalidraw.com/" target="_blank" rel="noopener">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" alt="Excalidraw" srcset="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2_dark.png" />
-    <img alt="Excalidraw" src="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2.png" />
-  </picture>
-</a>
+# Excalidraw — Self-Hosted
 
-<h4 align="center">
-  <a href="https://excalidraw.com">Excalidraw Editor</a> |
-  <a href="https://plus.excalidraw.com/blog">Blog</a> |
-  <a href="https://docs.excalidraw.com">Documentation</a> |
-  <a href="https://plus.excalidraw.com">Excalidraw+</a>
-</h4>
+A fork of [Excalidraw](https://excalidraw.com) with Firebase replaced by a self-hosted PostgreSQL backend. No external services, no Firebase account — just Docker.
 
-<div align="center">
-  <h2>
-    An open source virtual hand-drawn style whiteboard. </br>
-    Collaborative and end-to-end encrypted. </br>
-  <br />
-  </h2>
-</div>
+**What it does:** open-source virtual whiteboard with real-time collaboration, end-to-end encryption, share links, and image support — all running on your own infrastructure.
 
-<br />
-<p align="center">
-  <a href="https://github.com/excalidraw/excalidraw/blob/master/LICENSE">
-    <img alt="Excalidraw is released under the MIT license." src="https://img.shields.io/badge/license-MIT-blue.svg"  /></a>
-  <a href="https://www.npmjs.com/package/@excalidraw/excalidraw">
-    <img alt="npm downloads/month" src="https://img.shields.io/npm/dm/@excalidraw/excalidraw"  /></a>
-  <a href="https://docs.excalidraw.com/docs/introduction/contributing">
-    <img alt="PRs welcome!" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat"  /></a>
-  <a href="https://discord.gg/UexuTaE">
-    <img alt="Chat on Discord" src="https://img.shields.io/discord/723672430744174682?color=738ad6&label=Chat%20on%20Discord&logo=discord&logoColor=ffffff&widget=false"/></a>
-  <a href="https://deepwiki.com/excalidraw/excalidraw">
-    <img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" /></a>
-  <a href="https://twitter.com/excalidraw">
-    <img alt="Follow Excalidraw on Twitter" src="https://img.shields.io/twitter/follow/excalidraw.svg?label=follow+@excalidraw&style=social&logo=twitter"/></a>
-</p>
+---
 
-<div align="center">
-  <figure>
-    <a href="https://excalidraw.com" target="_blank" rel="noopener">
-      <img src="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github%2Fproduct_showcase.png" alt="Product showcase" />
-    </a>
-    <figcaption>
-      <p align="center">
-        Create beautiful hand-drawn like diagrams, wireframes, or whatever you like.
-      </p>
-    </figcaption>
-  </figure>
-</div>
-
-## Features
-
-The Excalidraw editor (npm package) supports:
-
-- 💯&nbsp;Free & open-source.
-- 🎨&nbsp;Infinite, canvas-based whiteboard.
-- ✍️&nbsp;Hand-drawn like style.
-- 🌓&nbsp;Dark mode.
-- 🏗️&nbsp;Customizable.
-- 📷&nbsp;Image support.
-- 😀&nbsp;Shape libraries support.
-- 🌐&nbsp;Localization (i18n) support.
-- 🖼️&nbsp;Export to PNG, SVG & clipboard.
-- 💾&nbsp;Open format - export drawings as an `.excalidraw` json file.
-- ⚒️&nbsp;Wide range of tools - rectangle, circle, diamond, arrow, line, free-draw, eraser...
-- ➡️&nbsp;Arrow-binding & labeled arrows.
-- 🔙&nbsp;Undo / Redo.
-- 🔍&nbsp;Zoom and panning support.
-
-## Excalidraw.com
-
-The app hosted at [excalidraw.com](https://excalidraw.com) is a minimal showcase of what you can build with Excalidraw. Its [source code](https://github.com/excalidraw/excalidraw/tree/master/excalidraw-app) is part of this repository as well, and the app features:
-
-- 📡&nbsp;PWA support (works offline).
-- 🤼&nbsp;Real-time collaboration.
-- 🔒&nbsp;End-to-end encryption.
-- 💾&nbsp;Local-first support (autosaves to the browser).
-- 🔗&nbsp;Shareable links (export to a readonly link you can share with others).
-
-We'll be adding these features as drop-in plugins for the npm package in the future.
-
-## Self-Hosting with Docker
-
-This fork replaces Firebase with a self-hosted PostgreSQL backend. Everything runs locally via Docker Compose — no external services, no Firebase account needed.
+## Running with Docker (recommended)
 
 ### Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) (v20+)
-- [Docker Compose](https://docs.docker.com/compose/install/) (v2+)
-- Ports **3000**, **3002**, and **5432** available on your machine
+- [Docker](https://docs.docker.com/get-docker/) v20+
+- [Docker Compose](https://docs.docker.com/compose/install/) v2+
+- Ports **3000**, **3002**, and **5432** free on your machine
 
-### Quick Start (Docker)
+### Start
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/Diamond3/excalidraw.git
 cd excalidraw
-
-# 2. Start everything
 docker-compose up --build
 ```
 
-That's it. Three services will start:
+Open **http://localhost:3000**.
 
-| Service | Port | Description |
+The first run takes a few minutes to build. Subsequent starts are fast.
+
+### What starts
+
+| Service | URL | Description |
 |---|---|---|
-| **excalidraw** | [localhost:3000](http://localhost:3000) | The frontend app (nginx) |
-| **backend** | [localhost:3002](http://localhost:3002) | Express API + WebSocket server |
-| **postgres** | localhost:5432 | PostgreSQL database |
+| Frontend | http://localhost:3000 | Excalidraw app (nginx) |
+| Backend | http://localhost:3002 | REST API + WebSocket server |
+| PostgreSQL | localhost:5432 | Database (auto-configured) |
 
-Open **http://localhost:3000** in your browser and start drawing.
+**You don't need to set up the database.** Docker creates it, and the backend automatically runs all migrations on first boot. Your data persists in a Docker volume — stopping and restarting containers won't lose anything.
 
-### What Works
-
-- Drawing and local save (autosave to browser)
-- Real-time collaboration (share a link, open in two tabs)
-- End-to-end encryption (unchanged from upstream)
-- Share links (export to shareable readonly link)
-- Image support in collaboration mode
-- Scene persistence across page refreshes
-
-### Architecture
-
-```
-Browser (:3000)  ──HTTP──>  Express API (:3002)  ──SQL──>  PostgreSQL (:5432)
-                 ──WS────>  Socket.IO   (:3002)
-```
-
-- **Frontend** is the standard Excalidraw app served by nginx
-- **Backend** handles scene CRUD, file storage, share links, and WebSocket relay
-- **PostgreSQL** stores scenes (encrypted), uploaded files, and share link data
-- All collaboration data is end-to-end encrypted — the server only sees ciphertext
-
-### Stopping
+### Stop
 
 ```bash
 docker-compose down
 ```
 
-To also wipe the database:
+Wipe everything including the database:
 
 ```bash
 docker-compose down -v
 ```
 
-### Running Without Docker (Development)
+---
 
-If you want to run the services individually for development:
+## Using an external PostgreSQL
 
-#### 1. Start PostgreSQL
+If you have your own PostgreSQL (local install, RDS, Supabase, etc.), skip the built-in postgres service and point the backend at yours.
 
-Use any PostgreSQL instance (local install, Docker, cloud). Create a database:
+Edit `docker-compose.yml` — remove the `postgres` service and its healthcheck dependency, then set your connection string:
+
+```yaml
+services:
+  backend:
+    build:
+      context: ./self-hosted-backend
+    environment:
+      DATABASE_URL: postgresql://user:password@your-host:5432/your-db
+      PORT: "3002"
+    ports:
+      - "3002:3002"
+
+  excalidraw:
+    build:
+      context: .
+      args:
+        - NODE_ENV=production
+        - VITE_APP_API_URL=http://localhost:3002
+        - VITE_APP_BACKEND_V2_GET_URL=http://localhost:3002/api/v2/
+        - VITE_APP_BACKEND_V2_POST_URL=http://localhost:3002/api/v2/post/
+        - VITE_APP_WS_SERVER_URL=http://localhost:3002
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+```
+
+The backend will create the required tables on first startup using `CREATE TABLE IF NOT EXISTS` — safe to run against an existing database.
+
+---
+
+## Running without Docker (development)
+
+### 1. PostgreSQL
+
+Any PostgreSQL instance works. Create a database:
 
 ```bash
 createdb excalidraw
 ```
 
-#### 2. Start the backend
+Or use Docker just for the database:
+
+```bash
+docker run -d \
+  --name excalidraw-postgres \
+  -e POSTGRES_DB=excalidraw \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 \
+  postgres:16-alpine
+```
+
+### 2. Backend
 
 ```bash
 cd self-hosted-backend
-cp .env.example .env
-# Edit .env if your DATABASE_URL differs from the default
+cp .env.example .env          # edit DATABASE_URL if needed
 npm install
 npm run build
 npm start
 ```
 
-The backend starts on port 3002 and auto-runs migrations on first boot.
+Runs on port 3002. Migrations run automatically.
 
-#### 3. Start the frontend
+### 3. Frontend
 
 ```bash
-# From the repo root
+# from repo root
 yarn
 yarn start
 ```
 
-The dev server starts on port 3001 (configured in `.env.development`). It's already configured to point at `localhost:3002` for the API and WebSocket server.
+Dev server runs on port 3001. Already configured to talk to `localhost:3002`.
 
-### Environment Variables
+---
 
-#### Frontend (set in `.env.development` or `.env.production`)
+## Deploying to a server
 
-| Variable | Default | Description |
-|---|---|---|
-| `VITE_APP_API_URL` | `http://localhost:3002` | Backend API base URL |
-| `VITE_APP_BACKEND_V2_GET_URL` | `http://localhost:3002/api/v2/` | Share link GET endpoint |
-| `VITE_APP_BACKEND_V2_POST_URL` | `http://localhost:3002/api/v2/post/` | Share link POST endpoint |
-| `VITE_APP_WS_SERVER_URL` | `http://localhost:3002` | WebSocket server URL |
-
-#### Backend (set in `self-hosted-backend/.env`)
-
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/excalidraw` | PostgreSQL connection string |
-| `PORT` | `3002` | Server listen port |
-
-### Customizing for Production
-
-When deploying to a server, update the URLs in `docker-compose.yml` build args to match your domain:
+Update the build args in `docker-compose.yml` to your domain:
 
 ```yaml
 excalidraw:
@@ -211,62 +146,58 @@ excalidraw:
       - VITE_APP_WS_SERVER_URL=https://api.yourdomain.com
 ```
 
-You should also:
-- Put a reverse proxy (nginx/Caddy) in front with HTTPS
-- Change the default PostgreSQL password in `docker-compose.yml`
-- Set up database backups for the `pgdata` volume
-
-### Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| `port 3000 already in use` | Stop whatever is using port 3000, or change the port in `docker-compose.yml` |
-| `port 5432 already in use` | You have a local PostgreSQL running. Stop it or change the port mapping |
-| Backend crashes on startup | Check `docker-compose logs backend` — usually a database connection issue |
-| Collaboration doesn't work | Make sure port 3002 is accessible from your browser (not just from Docker) |
-| Images don't load in collab | Check that the backend is running and `VITE_APP_API_URL` is correct |
+Also:
+- Put a reverse proxy (nginx or Caddy) in front with HTTPS — WebSocket connections require `Upgrade` headers to be forwarded
+- Change the default postgres password (`POSTGRES_PASSWORD` in `docker-compose.yml`)
+- Back up the `pgdata` volume
 
 ---
 
-## Quick start
+## Architecture
 
-**Note:** following instructions are for installing the Excalidraw [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw) when integrating Excalidraw into your own app. To run the repository locally for development, please refer to our [Development Guide](https://docs.excalidraw.com/docs/introduction/development).
-
-Use `npm` or `yarn` to install the package.
-
-```bash
-npm install react react-dom @excalidraw/excalidraw
-# or
-yarn add react react-dom @excalidraw/excalidraw
+```
+Browser (:3000)  ──HTTP──▶  Express API (:3002)  ──SQL──▶  PostgreSQL (:5432)
+                 ──WS─────▶  Socket.IO   (:3002)
 ```
 
-Check out our [documentation](https://docs.excalidraw.com/docs/@excalidraw/excalidraw/installation) for more details!
+- All collaboration data is **end-to-end encrypted** — the server only ever stores ciphertext
+- The backend stores scenes, uploaded files, and share links in PostgreSQL
+- The WebSocket server relays encrypted messages between collaborators and is also bundled into the backend
 
-## Contributing
+---
 
-- Missing something or found a bug? [Report here](https://github.com/excalidraw/excalidraw/issues).
-- Want to contribute? Check out our [contribution guide](https://docs.excalidraw.com/docs/introduction/contributing) or let us know on [Discord](https://discord.gg/UexuTaE).
-- Want to help with translations? See the [translation guide](https://docs.excalidraw.com/docs/introduction/contributing#translating).
+## Environment variables
 
-## Integrations
+### Backend (`self-hosted-backend/.env`)
 
-- [VScode extension](https://marketplace.visualstudio.com/items?itemName=pomdtr.excalidraw-editor)
-- [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw)
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/excalidraw` | PostgreSQL connection string |
+| `PORT` | `3002` | Listen port |
 
-## Who's integrating Excalidraw
+### Frontend (build args or `.env.production`)
 
-[Google Cloud](https://googlecloudcheatsheet.withgoogle.com/architecture) • [Meta](https://meta.com/) • [CodeSandbox](https://codesandbox.io/) • [Obsidian Excalidraw](https://github.com/zsviczian/obsidian-excalidraw-plugin) • [Replit](https://replit.com/) • [Slite](https://slite.com/) • [Notion](https://notion.so/) • [HackerRank](https://www.hackerrank.com/) • and many others
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_APP_API_URL` | `http://localhost:3002` | Backend base URL |
+| `VITE_APP_BACKEND_V2_GET_URL` | `http://localhost:3002/api/v2/` | Share link read endpoint |
+| `VITE_APP_BACKEND_V2_POST_URL` | `http://localhost:3002/api/v2/post/` | Share link write endpoint |
+| `VITE_APP_WS_SERVER_URL` | `http://localhost:3002` | WebSocket server URL |
 
-## Sponsors & support
+---
 
-If you like the project, you can become a sponsor at [Open Collective](https://opencollective.com/excalidraw) or use [Excalidraw+](https://plus.excalidraw.com/).
+## Troubleshooting
 
-## Thank you for supporting Excalidraw
+| Problem | Fix |
+|---|---|
+| Port already in use | Change the port mapping in `docker-compose.yml`, e.g. `"3001:80"` for the frontend |
+| `port 5432 already in use` | You have a local PostgreSQL running — stop it or use an external DB as described above |
+| Backend won't start | Run `docker-compose logs backend` — almost always a bad `DATABASE_URL` |
+| Collaboration not working | Port 3002 must be reachable from your browser, not just within Docker |
+| Images don't load in collab | Check `VITE_APP_API_URL` matches the address your browser uses to reach the backend |
 
-[<img src="https://opencollective.com/excalidraw/tiers/sponsors/0/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/0/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/1/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/1/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/2/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/2/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/3/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/3/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/4/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/4/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/5/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/5/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/6/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/6/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/7/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/7/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/8/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/8/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/9/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/9/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/10/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/10/website)
+---
 
-<a href="https://opencollective.com/excalidraw#category-CONTRIBUTE" target="_blank"><img src="https://opencollective.com/excalidraw/tiers/backers.svg?avatarHeight=32"/></a>
+## License
 
-Last but not least, we're thankful to these companies for offering their services for free:
-
-[![Vercel](./.github/assets/vercel.svg)](https://vercel.com) [![Sentry](./.github/assets/sentry.svg)](https://sentry.io) [![Crowdin](./.github/assets/crowdin.svg)](https://crowdin.com)
+MIT — see [LICENSE](./LICENSE). Based on [excalidraw/excalidraw](https://github.com/excalidraw/excalidraw).
