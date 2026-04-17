@@ -105,8 +105,10 @@ import { AppWelcomeScreen } from "./components/AppWelcomeScreen";
 import {
   ExportToExcalidrawPlus,
   exportToExcalidrawPlus,
+  saveWorkspace,
 } from "./components/ExportToExcalidrawPlus";
 import { TopErrorBoundary } from "./components/TopErrorBoundary";
+import { currentWorkspaceAtom } from "./data/workspaceState";
 
 import {
   exportToBackend,
@@ -145,7 +147,6 @@ import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
 
 import "./index.scss";
 
-import { ExcalidrawPlusPromoBanner } from "./components/ExcalidrawPlusPromoBanner";
 import { AppSidebar } from "./components/AppSidebar";
 
 import type { CollabAPI } from "./collab/Collab";
@@ -788,6 +789,8 @@ const ExcalidrawWrapper = () => {
 
   const localStorageQuotaExceeded = useAtomValue(localStorageQuotaExceededAtom);
 
+  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
+
   const onCollabDialogOpen = useCallback(
     () => setShareDialogState({ isOpen: true, type: "collaborationOnly" }),
     [setShareDialogState],
@@ -959,12 +962,53 @@ const ExcalidrawWrapper = () => {
 
           return (
             <div className="excalidraw-ui-top-right">
-              {excalidrawAPI?.getEditorInterface().formFactor === "desktop" && (
-                <ExcalidrawPlusPromoBanner
-                  isSignedIn={isExcalidrawPlusSignedUser}
-                />
+              {currentWorkspace && (
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--color-primary)",
+                    padding: "0.25rem 0.5rem",
+                    borderRadius: "4px",
+                    background: "var(--color-surface-mid)",
+                    maxWidth: "150px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={currentWorkspace.name}
+                >
+                  {currentWorkspace.name}
+                </div>
               )}
-
+              {excalidrawAPI && currentWorkspace && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveWorkspace(
+                      excalidrawAPI.getSceneElements(),
+                      excalidrawAPI.getAppState(),
+                      excalidrawAPI.getFiles(),
+                      currentWorkspace.name,
+                      currentWorkspace,
+                    ).catch((err) => {
+                      setErrorMessage(err.message);
+                    });
+                  }}
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    color: "#fff",
+                    background: "#e03131",
+                    border: "none",
+                    padding: "0.35rem 0.75rem",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                  title={`Save "${currentWorkspace.name}"`}
+                >
+                  Save
+                </button>
+              )}
               {collabError.message && <CollabError collabError={collabError} />}
               <LiveCollaborationTrigger
                 isCollaborating={isCollaborating}
@@ -990,6 +1034,22 @@ const ExcalidrawWrapper = () => {
           theme={appTheme}
           setTheme={(theme) => setAppTheme(theme)}
           refresh={() => forceRefresh((prev) => !prev)}
+          currentWorkspaceName={currentWorkspace?.name || null}
+          onSaveWorkspace={
+            excalidrawAPI && currentWorkspace
+              ? () => {
+                  saveWorkspace(
+                    excalidrawAPI.getSceneElements(),
+                    excalidrawAPI.getAppState(),
+                    excalidrawAPI.getFiles(),
+                    currentWorkspace.name,
+                    currentWorkspace,
+                  ).catch((err) => {
+                    setErrorMessage(err.message);
+                  });
+                }
+              : null
+          }
         />
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
@@ -1000,8 +1060,8 @@ const ExcalidrawWrapper = () => {
           <OverwriteConfirmDialog.Actions.SaveToDisk />
           {excalidrawAPI && (
             <OverwriteConfirmDialog.Action
-              title={t("overwriteConfirm.action.excalidrawPlus.title")}
-              actionLabel={t("overwriteConfirm.action.excalidrawPlus.button")}
+              title="Save Workspace"
+              actionLabel="Save"
               onClick={() => {
                 exportToExcalidrawPlus(
                   excalidrawAPI.getSceneElements(),
@@ -1011,7 +1071,7 @@ const ExcalidrawWrapper = () => {
                 );
               }}
             >
-              {t("overwriteConfirm.action.excalidrawPlus.description")}
+              Save the current scene to a workspace on the server.
             </OverwriteConfirmDialog.Action>
           )}
         </OverwriteConfirmDialog>
@@ -1057,7 +1117,24 @@ const ExcalidrawWrapper = () => {
           }}
         />
 
-        <AppSidebar />
+        <AppSidebar
+          onLoadWorkspace={(data) => {
+            if (excalidrawAPI) {
+              excalidrawAPI.resetScene();
+              excalidrawAPI.updateScene({
+                elements: data.elements || [],
+              });
+              if (data.files) {
+                const fileEntries = Object.entries(data.files);
+                if (fileEntries.length) {
+                  excalidrawAPI.addFiles(
+                    fileEntries.map(([, file]) => file),
+                  );
+                }
+              }
+            }
+          }}
+        />
 
         {errorMessage && (
           <ErrorDialog onClose={() => setErrorMessage("")}>

@@ -9,6 +9,7 @@ import { setupWebSocket } from "./ws";
 import scenesRouter from "./routes/scenes";
 import filesRouter from "./routes/files";
 import shareLinksRouter from "./routes/shareLinks";
+import workspacesRouter from "./routes/workspaces";
 
 const app = express();
 const httpServer = createServer(app);
@@ -20,6 +21,7 @@ app.use("/api/files", express.json({ limit: "50mb" }));
 app.use("/api/scenes", scenesRouter);
 app.use("/api/files", filesRouter);
 app.use("/api/v2", shareLinksRouter);
+app.use("/api/workspaces", workspacesRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

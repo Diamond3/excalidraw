@@ -1,18 +1,16 @@
-import React from "react";
-import { nanoid } from "nanoid";
+import React, { useState } from "react";
 
-import { trackEvent } from "@excalidraw/excalidraw/analytics";
 import { Card } from "@excalidraw/excalidraw/components/Card";
-import { ExcalidrawLogo } from "@excalidraw/excalidraw/components/ExcalidrawLogo";
 import { ToolButton } from "@excalidraw/excalidraw/components/ToolButton";
-import { MIME_TYPES, getFrame } from "@excalidraw/common";
+import { serializeAsJSON } from "@excalidraw/excalidraw/data/json";
 import {
-  encryptData,
+  compressData,
+} from "@excalidraw/excalidraw/data/encode";
+import {
   generateEncryptionKey,
 } from "@excalidraw/excalidraw/data/encryption";
-import { serializeAsJSON } from "@excalidraw/excalidraw/data/json";
 import { isInitializedImageElement } from "@excalidraw/element";
-import { useI18n } from "@excalidraw/excalidraw/i18n";
+import { save } from "@excalidraw/excalidraw/components/icons";
 
 import type {
   FileId,
@@ -27,50 +25,50 @@ import type {
 import { FILE_UPLOAD_MAX_BYTES } from "../app_constants";
 import { encodeFilesForUpload } from "../data/FileManager";
 import { saveFilesToFirebase } from "../data/firebase";
+import { appJotaiStore } from "../app-jotai";
+import { currentWorkspaceAtom } from "../data/workspaceState";
+
+import type { WorkspaceState } from "../data/workspaceState";
 
 const API_URL = import.meta.env.VITE_APP_API_URL;
 
-const uint8ArrayToBase64 = (bytes: Uint8Array): string => {
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-};
-
-export const exportToExcalidrawPlus = async (
+export const saveWorkspace = async (
   elements: readonly NonDeletedExcalidrawElement[],
   appState: Partial<AppState>,
   files: BinaryFiles,
   name: string,
+  existingWorkspace?: WorkspaceState,
 ) => {
-  const id = `${nanoid(12)}`;
+  const encryptionKey = existingWorkspace?.encryptionKey
+    || await generateEncryptionKey("string");
 
-  const encryptionKey = (await generateEncryptionKey())!;
-  const encryptedData = await encryptData(
-    encryptionKey,
-    serializeAsJSON(elements, appState, files, "database"),
+  const payload = await compressData(
+    new TextEncoder().encode(
+      serializeAsJSON(elements, appState, files, "database"),
+    ),
+    { encryptionKey },
   );
 
-  const blob = new Blob(
-    [encryptedData.iv, new Uint8Array(encryptedData.encryptedBuffer)],
+  const params = new URLSearchParams({ name });
+  if (existingWorkspace?.id) {
+    params.set("id", existingWorkspace.id);
+  }
+
+  const response = await fetch(
+    `${API_URL}/api/workspaces?${params.toString()}`,
     {
-      type: MIME_TYPES.binary,
+      method: "POST",
+      body: payload.buffer,
     },
   );
 
-  const blobBuffer = new Uint8Array(await blob.arrayBuffer());
+  const json = await response.json();
 
-  await fetch(`${API_URL}/api/files`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prefix: "/migrations/scenes",
-      fileId: id,
-      data: uint8ArrayToBase64(blobBuffer),
-    }),
-  });
+  if (!json.id) {
+    throw new Error("Failed to save workspace");
+  }
 
+  // Save associated files
   const filesMap = new Map<FileId, BinaryFileData>();
   for (const element of elements) {
     if (isInitializedImageElement(element) && files[element.fileId]) {
@@ -86,16 +84,43 @@ export const exportToExcalidrawPlus = async (
     });
 
     await saveFilesToFirebase({
-      prefix: `/migrations/files/scenes/${id}`,
+      prefix: `/files/workspaces/${json.id}`,
       files: filesToUpload,
     });
   }
 
-  window.open(
-    `${
-      import.meta.env.VITE_APP_PLUS_APP
-    }/import?excalidraw=${id},${encryptionKey}`,
+  // Store the key in localStorage
+  const workspaceKeys = JSON.parse(
+    localStorage.getItem("excalidraw-workspace-keys") || "{}",
   );
+  workspaceKeys[json.id] = encryptionKey;
+  localStorage.setItem(
+    "excalidraw-workspace-keys",
+    JSON.stringify(workspaceKeys),
+  );
+
+  const workspace: WorkspaceState = {
+    id: json.id,
+    name: json.name,
+    encryptionKey,
+  };
+  appJotaiStore.set(currentWorkspaceAtom, workspace);
+
+  return workspace;
+};
+
+// Keep the old export name for compatibility with App.tsx imports
+export const exportToExcalidrawPlus = async (
+  elements: readonly NonDeletedExcalidrawElement[],
+  appState: Partial<AppState>,
+  files: BinaryFiles,
+  name: string,
+) => {
+  const workspaceName = window.prompt("Workspace name:", name || "Untitled");
+  if (!workspaceName) {
+    return;
+  }
+  return saveWorkspace(elements, appState, files, workspaceName);
 };
 
 export const ExportToExcalidrawPlus: React.FC<{
@@ -106,38 +131,36 @@ export const ExportToExcalidrawPlus: React.FC<{
   onError: (error: Error) => void;
   onSuccess: () => void;
 }> = ({ elements, appState, files, name, onError, onSuccess }) => {
-  const { t } = useI18n();
+  const [saving, setSaving] = useState(false);
+
   return (
     <Card color="primary">
-      <div className="Card-icon">
-        <ExcalidrawLogo
-          style={{
-            [`--color-logo-icon` as any]: "#fff",
-            width: "2.8rem",
-            height: "2.8rem",
-          }}
-        />
+      <div className="Card-icon" style={{ fontSize: "2rem" }}>
+        {save}
       </div>
-      <h2>Excalidraw+</h2>
+      <h2>Save Workspace</h2>
       <div className="Card-details">
-        {t("exportDialog.excalidrawplus_description")}
+        Save the current scene to a workspace on the server.
       </div>
       <ToolButton
         className="Card-button"
         type="button"
-        title={t("exportDialog.excalidrawplus_button")}
-        aria-label={t("exportDialog.excalidrawplus_button")}
+        title="Save Workspace"
+        aria-label="Save Workspace"
         showAriaLabel={true}
+        disabled={saving}
         onClick={async () => {
           try {
-            trackEvent("export", "eplus", `ui (${getFrame()})`);
+            setSaving(true);
             await exportToExcalidrawPlus(elements, appState, files, name);
             onSuccess();
           } catch (error: any) {
             console.error(error);
             if (error.name !== "AbortError") {
-              onError(new Error(t("exportDialog.excalidrawplus_exportError")));
+              onError(new Error("Failed to save workspace"));
             }
+          } finally {
+            setSaving(false);
           }
         }}
       />
