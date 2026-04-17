@@ -1,7 +1,7 @@
 services:
   backend:
     build:
-      context: ./self-hosted-backend
+      context: ./backend
     environment:
       DATABASE_URL: ${DATABASE_URL}
     restart: on-failure
@@ -9,7 +9,8 @@ services:
   excalidraw:
     build:
       context: .
-    container_name: excalidraw
+    environment:
+      BACKEND_HOST: backend:3002
     ports:
       - "3000:80"
     depends_on:
