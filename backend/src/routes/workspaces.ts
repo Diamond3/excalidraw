@@ -22,7 +22,7 @@ router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const result = await query(
-      "SELECT id, name, data FROM workspaces WHERE id = $1",
+      "SELECT id, name, data, encryption_key FROM workspaces WHERE id = $1",
       [id],
     );
 
@@ -30,8 +30,13 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Workspace not found" });
     }
 
+    const row = result.rows[0];
     res.set("Content-Type", "application/octet-stream");
-    res.send(result.rows[0].data);
+    res.set("Access-Control-Expose-Headers", "X-Encryption-Key");
+    if (row.encryption_key) {
+      res.set("X-Encryption-Key", row.encryption_key);
+    }
+    res.send(row.data);
   } catch (error) {
     console.error("Error loading workspace:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -41,9 +46,10 @@ router.get("/:id", async (req, res) => {
 // Create or update a workspace
 router.post("/", async (req, res) => {
   try {
-    const { id, name } = req.query;
+    const { id, name, key } = req.query;
     const workspaceId = (id as string) || nanoid(20);
     const workspaceName = (name as string) || "Untitled";
+    const encryptionKey = (key as string) || null;
 
     const chunks: Buffer[] = [];
     req.on("data", (chunk: Buffer) => chunks.push(chunk));
@@ -52,11 +58,14 @@ router.post("/", async (req, res) => {
         const data = Buffer.concat(chunks);
 
         await query(
-          `INSERT INTO workspaces (id, name, data, updated_at)
-           VALUES ($1, $2, $3, NOW())
+          `INSERT INTO workspaces (id, name, data, encryption_key, updated_at)
+           VALUES ($1, $2, $3, $4, NOW())
            ON CONFLICT (id) DO UPDATE
-           SET name = $2, data = $3, updated_at = NOW()`,
-          [workspaceId, workspaceName, data],
+           SET name = $2,
+               data = $3,
+               encryption_key = COALESCE($4, workspaces.encryption_key),
+               updated_at = NOW()`,
+          [workspaceId, workspaceName, data, encryptionKey],
         );
 
         res.json({ id: workspaceId, name: workspaceName });

@@ -65,11 +65,21 @@ export const WorkspacesList = ({
       const workspaceKeys = JSON.parse(
         localStorage.getItem("excalidraw-workspace-keys") || "{}",
       );
-      const decryptionKey = workspaceKeys[workspace.id];
+      const decryptionKey =
+        response.headers.get("X-Encryption-Key") ||
+        workspaceKeys[workspace.id];
 
       if (!decryptionKey) {
-        alert("Decryption key not found for this workspace. It may have been saved from a different browser.");
+        alert("Decryption key not found for this workspace. Re-save it from a browser that has the key to make it available everywhere.");
         return;
+      }
+
+      if (decryptionKey && !workspaceKeys[workspace.id]) {
+        workspaceKeys[workspace.id] = decryptionKey;
+        localStorage.setItem(
+          "excalidraw-workspace-keys",
+          JSON.stringify(workspaceKeys),
+        );
       }
 
       const { data: decodedBuffer } = await decompressData(

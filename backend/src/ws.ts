@@ -1,5 +1,6 @@
 import { Server as HttpServer } from "http";
 import { Server } from "socket.io";
+import { isAuthEnabled, isAuthenticated } from "./auth";
 
 export const setupWebSocket = (httpServer: HttpServer) => {
   const io = new Server(httpServer, {
@@ -9,6 +10,16 @@ export const setupWebSocket = (httpServer: HttpServer) => {
     },
     transports: ["websocket", "polling"],
     maxHttpBufferSize: 10e6,
+  });
+
+  io.use((socket, next) => {
+    if (!isAuthEnabled()) {
+      return next();
+    }
+    if (isAuthenticated(socket.request)) {
+      return next();
+    }
+    return next(new Error("Unauthorized"));
   });
 
   io.on("connection", (socket) => {

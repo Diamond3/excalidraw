@@ -10,13 +10,26 @@ import scenesRouter from "./routes/scenes";
 import filesRouter from "./routes/files";
 import shareLinksRouter from "./routes/shareLinks";
 import workspacesRouter from "./routes/workspaces";
+import authRouter from "./routes/auth";
+import { isAuthEnabled, requireAuth } from "./auth";
 
 const app = express();
+app.set("trust proxy", true);
 const httpServer = createServer(app);
 
-app.use(cors());
+app.use(cors({ credentials: true, origin: true }));
+app.use("/api/auth", express.json());
 app.use("/api/scenes", express.json({ limit: "50mb" }));
 app.use("/api/files", express.json({ limit: "50mb" }));
+
+app.use("/api/auth", authRouter);
+
+if (isAuthEnabled()) {
+  app.use("/api/scenes", requireAuth);
+  app.use("/api/files", requireAuth);
+  app.use("/api/v2", requireAuth);
+  app.use("/api/workspaces", requireAuth);
+}
 
 app.use("/api/scenes", scenesRouter);
 app.use("/api/files", filesRouter);
