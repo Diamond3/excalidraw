@@ -980,6 +980,35 @@ const ExcalidrawWrapper = () => {
                   {currentWorkspace.name}
                 </div>
               )}
+              {excalidrawAPI && currentWorkspace && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveWorkspace(
+                      excalidrawAPI.getSceneElements(),
+                      excalidrawAPI.getAppState(),
+                      excalidrawAPI.getFiles(),
+                      currentWorkspace.name,
+                      currentWorkspace,
+                    ).catch((err) => {
+                      setErrorMessage(err.message);
+                    });
+                  }}
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    color: "#fff",
+                    background: "#e03131",
+                    border: "none",
+                    padding: "0.35rem 0.75rem",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                  title={`Save "${currentWorkspace.name}"`}
+                >
+                  Save
+                </button>
+              )}
               {collabError.message && <CollabError collabError={collabError} />}
               <LiveCollaborationTrigger
                 isCollaborating={isCollaborating}

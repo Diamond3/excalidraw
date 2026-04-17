@@ -1,6 +1,7 @@
 *
 !.env.development
 !.env.production
+!nginx.conf
 !.eslintrc.json
 !.npmrc
 !.prettierrc
