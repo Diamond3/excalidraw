@@ -966,10 +966,12 @@ const ExcalidrawWrapper = () => {
                 <div
                   style={{
                     fontSize: "0.75rem",
-                    color: "var(--color-primary)",
-                    padding: "0.25rem 0.5rem",
+                    fontWeight: 600,
+                    color: "#fff",
+                    padding: "0.35rem 0.6rem",
                     borderRadius: "4px",
-                    background: "var(--color-surface-mid)",
+                    background: "var(--color-primary)",
+                    border: "1px solid var(--color-primary-darker)",
                     maxWidth: "150px",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
