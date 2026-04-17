@@ -29,7 +29,7 @@ app.get("/health", (_req, res) => {
 
 setupWebSocket(httpServer);
 
-const PORT = process.env.PORT || 3002;
+const PORT = Number(process.env.PORT) || 3002;
 
 const start = async () => {
   try {
@@ -40,7 +40,7 @@ const start = async () => {
     process.exit(1);
   }
 
-  httpServer.listen(PORT, () => {
+  httpServer.listen(PORT, "::", () => {
     console.log(`Backend server running on port ${PORT}`);
   });
 };
