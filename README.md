@@ -5,8 +5,7 @@ A fork of [Excalidraw](https://excalidraw.com) with Firebase replaced by a small
 ## What this fork changes
 
 - **Firebase removed.** Scenes, share links and uploaded files go to a Postgres database instead.
-- **Workspaces.** Save the current canvas on the server under a name and reload it later.
-- **Quick-save button** in the top-right — one click to save the active workspace.
+- **Workspaces.** Named scenes stored server-side. Last opened one is restored per browser. Save pushes, Sync pulls.
 - **Single-origin frontend.** nginx serves the static app and reverse-proxies `/api` and `/socket.io` to the backend.
 - **Optional shared password** via `APP_PASSWORD`. Set it and users see a one-time prompt; a long-lived cookie remembers them per browser. Leave it unset for an open instance.
 
