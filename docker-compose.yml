@@ -1,6 +1,5 @@
 services:
   backend:
-    image: YOURUSER/excalidraw-backend:latest
     build:
       context: ./self-hosted-backend
     environment:
@@ -8,7 +7,6 @@ services:
     restart: on-failure
 
   excalidraw:
-    image: YOURUSER/excalidraw-frontend:latest
     build:
       context: .
     container_name: excalidraw
