@@ -837,13 +837,25 @@ const ExcalidrawWrapper = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const applyWorkspaceData = useCallback(
-    (data: Pick<ImportedDataState, "elements" | "files">) => {
+    (
+      data: Pick<ImportedDataState, "elements" | "files">,
+      opts: { preserveView?: boolean } = {},
+    ) => {
       if (!excalidrawAPI) {
         return;
       }
+      // snapshot the viewport so a sync/reload doesn't jump back to origin
+      const prev = opts.preserveView ? excalidrawAPI.getAppState() : null;
       excalidrawAPI.resetScene();
       excalidrawAPI.updateScene({
         elements: data.elements || [],
+        appState: prev
+          ? {
+              scrollX: prev.scrollX,
+              scrollY: prev.scrollY,
+              zoom: prev.zoom,
+            }
+          : undefined,
       });
       if (data.files) {
         const fileEntries = Object.values(data.files);
@@ -889,10 +901,13 @@ const ExcalidrawWrapper = () => {
       const sceneData: ImportedDataState = JSON.parse(
         new TextDecoder().decode(decoded),
       );
-      applyWorkspaceData({
-        elements: sceneData.elements,
-        files: sceneData.files,
-      });
+      applyWorkspaceData(
+        {
+          elements: sceneData.elements,
+          files: sceneData.files,
+        },
+        { preserveView: true },
+      );
     } catch (err: any) {
       setErrorMessage(`Sync failed: ${err.message}`);
     } finally {
