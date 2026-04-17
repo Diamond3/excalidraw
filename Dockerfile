@@ -15,7 +15,11 @@ RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
 
 FROM --platform=${TARGETPLATFORM} nginx:1.27-alpine
 
-COPY --from=build /opt/node_app/excalidraw-app/build /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV PORT=80
+ENV BACKEND_HOST=backend:3002
+ENV NGINX_ENVSUBST_FILTER=^(PORT|BACKEND_HOST)$
 
-HEALTHCHECK CMD wget -q -O /dev/null http://localhost || exit 1
+COPY --from=build /opt/node_app/excalidraw-app/build /usr/share/nginx/html
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+
+HEALTHCHECK CMD wget -q -O /dev/null http://localhost:${PORT} || exit 1
