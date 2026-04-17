@@ -967,7 +967,9 @@ const ExcalidrawWrapper = () => {
                   className="workspace-label"
                   title={currentWorkspace.name}
                 >
-                  {currentWorkspace.name}
+                  <span className="workspace-label__name">
+                    {currentWorkspace.name}
+                  </span>
                 </div>
               )}
               {excalidrawAPI && currentWorkspace && (
