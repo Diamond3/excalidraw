@@ -964,19 +964,7 @@ const ExcalidrawWrapper = () => {
             <div className="excalidraw-ui-top-right">
               {currentWorkspace && (
                 <div
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    color: "#fff",
-                    padding: "0.35rem 0.6rem",
-                    borderRadius: "4px",
-                    background: "var(--color-primary)",
-                    border: "1px solid var(--color-primary-darker)",
-                    maxWidth: "150px",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
+                  className="workspace-label"
                   title={currentWorkspace.name}
                 >
                   {currentWorkspace.name}
@@ -985,6 +973,7 @@ const ExcalidrawWrapper = () => {
               {excalidrawAPI && currentWorkspace && (
                 <button
                   type="button"
+                  className="save-workspace-button"
                   onClick={() => {
                     saveWorkspace(
                       excalidrawAPI.getSceneElements(),
@@ -995,16 +984,6 @@ const ExcalidrawWrapper = () => {
                     ).catch((err) => {
                       setErrorMessage(err.message);
                     });
-                  }}
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    color: "#fff",
-                    background: "#e03131",
-                    border: "none",
-                    padding: "0.35rem 0.75rem",
-                    borderRadius: "4px",
-                    cursor: "pointer",
                   }}
                   title={`Save "${currentWorkspace.name}"`}
                 >
