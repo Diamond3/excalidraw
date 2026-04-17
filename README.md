@@ -8,6 +8,7 @@ A fork of [Excalidraw](https://excalidraw.com) with Firebase replaced by a small
 - **Workspaces.** Save the current canvas on the server under a name and reload it later.
 - **Quick-save button** in the top-right — one click to save the active workspace.
 - **Single-origin frontend.** nginx serves the static app and reverse-proxies `/api` and `/socket.io` to the backend.
+- **Optional shared password** via `APP_PASSWORD`. Set it and users see a one-time prompt; a long-lived cookie remembers them per browser. Leave it unset for an open instance.
 
 ## The two containers
 
@@ -15,7 +16,7 @@ This fork builds two Docker images. They are designed to work independently so y
 
 | Image | Dockerfile | Env vars | Purpose |
 |---|---|---|---|
-| **backend**  | `backend/Dockerfile` | `DATABASE_URL`, `PORT` | REST API + WebSocket server |
+| **backend**  | `backend/Dockerfile` | `DATABASE_URL`, `PORT`, `APP_PASSWORD` (optional) | REST API + WebSocket server |
 | **frontend** | `Dockerfile` (repo root) | `BACKEND_HOST`, `PORT` | nginx serving the static app + proxying to the backend |
 
 `BACKEND_HOST` is the `host:port` the nginx reverse proxy forwards `/api` and `/socket.io` to (e.g. `backend:3002` inside a compose network, or `backend.railway.internal:3002` on Railway's private network).
@@ -32,6 +33,8 @@ Easiest for self-hosting on a single machine.
 
 ```
 DATABASE_URL=postgresql://user:password@host:5432/dbname
+# optional — require a shared password before the app is usable
+APP_PASSWORD=change-me
 ```
 
 **2.** Build and run:
@@ -88,6 +91,7 @@ These platforms deploy one Dockerfile at a time, not a compose stack. Create two
 - **Environment variables:**
   - `DATABASE_URL` — your Postgres connection string
   - `PORT` — usually provided automatically by the platform
+  - `APP_PASSWORD` *(optional)* — shared password; if set, the app prompts for it once per browser
 - **Networking:** enable private networking if your platform supports it; no public domain needed
 
 ### Service B — frontend

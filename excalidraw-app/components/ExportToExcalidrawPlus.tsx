@@ -49,7 +49,7 @@ export const saveWorkspace = async (
     { encryptionKey },
   );
 
-  const params = new URLSearchParams({ name });
+  const params = new URLSearchParams({ name, key: encryptionKey });
   if (existingWorkspace?.id) {
     params.set("id", existingWorkspace.id);
   }
