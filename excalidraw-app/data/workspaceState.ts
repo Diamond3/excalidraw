@@ -56,3 +56,9 @@ if (typeof window !== "undefined") {
     appJotaiStore.set(currentWorkspaceAtom, loadPersistedWorkspace());
   });
 }
+
+// scene version that was last saved to (or loaded from) the server
+export const lastSyncedSceneVersionAtom = atom<number>(-1);
+
+// derived flag — current scene differs from last synced
+export const workspaceDirtyAtom = atom<boolean>(false);

@@ -3,6 +3,7 @@ import {
   LiveCollaborationTrigger,
   TTDDialogTrigger,
   CaptureUpdateAction,
+  hashElementsVersion,
   reconcileElements,
   useEditorInterface,
   ExcalidrawAPIProvider,
@@ -34,7 +35,7 @@ import {
   isDevEnv,
 } from "@excalidraw/common";
 import polyfill from "@excalidraw/excalidraw/polyfill";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadFromBlob } from "@excalidraw/excalidraw/data/blob";
 import { t } from "@excalidraw/excalidraw/i18n";
 
@@ -64,6 +65,7 @@ import {
 
 import type { RemoteExcalidrawElement } from "@excalidraw/excalidraw/data/reconcile";
 import type { RestoredDataState } from "@excalidraw/excalidraw/data/restore";
+import type { ImportedDataState } from "@excalidraw/excalidraw/data/types";
 import type {
   FileId,
   NonDeletedExcalidrawElement,
@@ -108,7 +110,12 @@ import {
   saveWorkspace,
 } from "./components/ExportToExcalidrawPlus";
 import { TopErrorBoundary } from "./components/TopErrorBoundary";
-import { currentWorkspaceAtom } from "./data/workspaceState";
+import {
+  currentWorkspaceAtom,
+  lastSyncedSceneVersionAtom,
+  workspaceDirtyAtom,
+} from "./data/workspaceState";
+import { decompressData } from "@excalidraw/excalidraw/data/encode";
 
 import {
   exportToBackend,
@@ -676,6 +683,26 @@ const ExcalidrawWrapper = () => {
     };
   }, [excalidrawAPI]);
 
+  // debounced dirty check — getSceneVersion is O(n), onChange fires constantly
+  // while drawing, so we only re-evaluate ~1.5s after the user stops moving
+  const debouncedDirtyCheck = useMemo(
+    () =>
+      debounce((elements: readonly OrderedExcalidrawElement[]) => {
+        if (!appJotaiStore.get(currentWorkspaceAtom)) {
+          return;
+        }
+        const lastSynced = appJotaiStore.get(lastSyncedSceneVersionAtom);
+        if (lastSynced === -1) {
+          return;
+        }
+        const isDirty = hashElementsVersion(elements) !== lastSynced;
+        if (isDirty !== appJotaiStore.get(workspaceDirtyAtom)) {
+          appJotaiStore.set(workspaceDirtyAtom, isDirty);
+        }
+      }, 1500),
+    [],
+  );
+
   const onChange = (
     elements: readonly OrderedExcalidrawElement[],
     appState: AppState,
@@ -683,6 +710,21 @@ const ExcalidrawWrapper = () => {
   ) => {
     if (collabAPI?.isCollaborating()) {
       collabAPI.syncElements(elements);
+    }
+
+    // track dirty state vs last saved/loaded server version
+    if (appJotaiStore.get(currentWorkspaceAtom)) {
+      if (appJotaiStore.get(lastSyncedSceneVersionAtom) === -1) {
+        // first change after mount — capture baseline immediately so early
+        // edits aren't absorbed into it by the debounced check
+        appJotaiStore.set(
+          lastSyncedSceneVersionAtom,
+          hashElementsVersion(elements),
+        );
+        appJotaiStore.set(workspaceDirtyAtom, false);
+      } else {
+        debouncedDirtyCheck(elements);
+      }
     }
 
     // this check is redundant, but since this is a hot path, it's best
@@ -790,6 +832,99 @@ const ExcalidrawWrapper = () => {
   const localStorageQuotaExceeded = useAtomValue(localStorageQuotaExceededAtom);
 
   const currentWorkspace = useAtomValue(currentWorkspaceAtom);
+  const workspaceDirty = useAtomValue(workspaceDirtyAtom);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const applyWorkspaceData = useCallback(
+    (data: Pick<ImportedDataState, "elements" | "files">) => {
+      if (!excalidrawAPI) {
+        return;
+      }
+      excalidrawAPI.resetScene();
+      excalidrawAPI.updateScene({
+        elements: data.elements || [],
+      });
+      if (data.files) {
+        const fileEntries = Object.values(data.files);
+        if (fileEntries.length) {
+          excalidrawAPI.addFiles(fileEntries);
+        }
+      }
+      appJotaiStore.set(
+        lastSyncedSceneVersionAtom,
+        hashElementsVersion(excalidrawAPI.getSceneElements()),
+      );
+      appJotaiStore.set(workspaceDirtyAtom, false);
+    },
+    [excalidrawAPI],
+  );
+
+  const syncWorkspace = useCallback(async () => {
+    if (!currentWorkspace || !excalidrawAPI || isSyncing) {
+      return;
+    }
+    // make sure the dirty flag reflects the latest edits before prompting
+    debouncedDirtyCheck.flush();
+    if (
+      appJotaiStore.get(workspaceDirtyAtom) &&
+      !window.confirm(
+        "You have unsaved changes. Syncing will replace the current scene with the server version. Continue?",
+      )
+    ) {
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_APP_API_URL}/api/workspaces/${currentWorkspace.id}`,
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch workspace");
+      }
+      const buffer = await response.arrayBuffer();
+      const { data: decoded } = await decompressData(new Uint8Array(buffer), {
+        decryptionKey: currentWorkspace.encryptionKey,
+      });
+      const sceneData: ImportedDataState = JSON.parse(
+        new TextDecoder().decode(decoded),
+      );
+      applyWorkspaceData({
+        elements: sceneData.elements,
+        files: sceneData.files,
+      });
+    } catch (err: any) {
+      setErrorMessage(`Sync failed: ${err.message}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [
+    currentWorkspace,
+    excalidrawAPI,
+    isSyncing,
+    applyWorkspaceData,
+    debouncedDirtyCheck,
+  ]);
+
+  const handleSaveWorkspace = useCallback(async () => {
+    if (!excalidrawAPI || !currentWorkspace || isSaving) {
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await saveWorkspace(
+        excalidrawAPI.getSceneElements(),
+        excalidrawAPI.getAppState(),
+        excalidrawAPI.getFiles(),
+        currentWorkspace.name,
+        currentWorkspace,
+      );
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [excalidrawAPI, currentWorkspace, isSaving]);
 
   const onCollabDialogOpen = useCallback(
     () => setShareDialogState({ isOpen: true, type: "collaborationOnly" }),
@@ -973,24 +1108,32 @@ const ExcalidrawWrapper = () => {
                 </div>
               )}
               {excalidrawAPI && currentWorkspace && (
-                <button
-                  type="button"
-                  className="save-workspace-button"
-                  onClick={() => {
-                    saveWorkspace(
-                      excalidrawAPI.getSceneElements(),
-                      excalidrawAPI.getAppState(),
-                      excalidrawAPI.getFiles(),
-                      currentWorkspace.name,
-                      currentWorkspace,
-                    ).catch((err) => {
-                      setErrorMessage(err.message);
-                    });
-                  }}
-                  title={`Save "${currentWorkspace.name}"`}
-                >
-                  Save
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="sync-workspace-button"
+                    onClick={syncWorkspace}
+                    disabled={isSyncing}
+                    title={`Sync "${currentWorkspace.name}" from server`}
+                  >
+                    {isSyncing ? "Syncing…" : "Sync"}
+                  </button>
+                  <button
+                    type="button"
+                    className={clsx("save-workspace-button", {
+                      "save-workspace-button--dirty": workspaceDirty,
+                    })}
+                    onClick={handleSaveWorkspace}
+                    disabled={isSaving}
+                    title={
+                      workspaceDirty
+                        ? `Save "${currentWorkspace.name}" — unsaved changes`
+                        : `Save "${currentWorkspace.name}" — no changes`
+                    }
+                  >
+                    {isSaving ? "Saving…" : "Save"}
+                  </button>
+                </>
               )}
               {collabError.message && <CollabError collabError={collabError} />}
               <LiveCollaborationTrigger
@@ -1019,19 +1162,7 @@ const ExcalidrawWrapper = () => {
           refresh={() => forceRefresh((prev) => !prev)}
           currentWorkspaceName={currentWorkspace?.name || null}
           onSaveWorkspace={
-            excalidrawAPI && currentWorkspace
-              ? () => {
-                  saveWorkspace(
-                    excalidrawAPI.getSceneElements(),
-                    excalidrawAPI.getAppState(),
-                    excalidrawAPI.getFiles(),
-                    currentWorkspace.name,
-                    currentWorkspace,
-                  ).catch((err) => {
-                    setErrorMessage(err.message);
-                  });
-                }
-              : null
+            excalidrawAPI && currentWorkspace ? handleSaveWorkspace : null
           }
         />
         <AppWelcomeScreen
@@ -1102,20 +1233,10 @@ const ExcalidrawWrapper = () => {
 
         <AppSidebar
           onLoadWorkspace={(data) => {
-            if (excalidrawAPI) {
-              excalidrawAPI.resetScene();
-              excalidrawAPI.updateScene({
-                elements: data.elements || [],
-              });
-              if (data.files) {
-                const fileEntries = Object.entries(data.files);
-                if (fileEntries.length) {
-                  excalidrawAPI.addFiles(
-                    fileEntries.map(([, file]) => file),
-                  );
-                }
-              }
-            }
+            applyWorkspaceData({
+              elements: data.elements,
+              files: data.files,
+            });
           }}
         />
 

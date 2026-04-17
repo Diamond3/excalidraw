@@ -121,7 +121,8 @@
     }
   }
 
-  .save-workspace-button {
+  .save-workspace-button,
+  .sync-workspace-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -130,7 +131,6 @@
     border: none;
     border-radius: var(--border-radius-lg);
     box-shadow: 0 0 0 1px var(--color-surface-lowest);
-    background: #e03131;
     color: #fff;
     font-size: 0.8333rem;
     font-weight: 600;
@@ -140,12 +140,46 @@
     flex-shrink: 0;
     transition: background-color 0.15s ease;
 
+    &:disabled {
+      opacity: 0.6;
+      cursor: progress;
+    }
+  }
+
+  .save-workspace-button {
+    background: #868e96;
+
     &:hover {
-      background: #c92a2a;
+      background: #6c757d;
     }
 
     &:active {
-      background: #a51111;
+      background: #495057;
+      box-shadow: 0 0 0 1px var(--color-brand-active);
+    }
+
+    &.save-workspace-button--dirty {
+      background: #e03131;
+
+      &:hover {
+        background: #c92a2a;
+      }
+
+      &:active {
+        background: #a51111;
+      }
+    }
+  }
+
+  .sync-workspace-button {
+    background: #2f9e44;
+
+    &:hover {
+      background: #2b8a3e;
+    }
+
+    &:active {
+      background: #1f7a30;
       box-shadow: 0 0 0 1px var(--color-brand-active);
     }
   }

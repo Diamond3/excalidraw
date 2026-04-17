@@ -25,8 +25,14 @@ import type {
 import { FILE_UPLOAD_MAX_BYTES } from "../app_constants";
 import { encodeFilesForUpload } from "../data/FileManager";
 import { saveFilesToFirebase } from "../data/firebase";
+import { hashElementsVersion } from "@excalidraw/excalidraw";
+
 import { appJotaiStore } from "../app-jotai";
-import { currentWorkspaceAtom } from "../data/workspaceState";
+import {
+  currentWorkspaceAtom,
+  lastSyncedSceneVersionAtom,
+  workspaceDirtyAtom,
+} from "../data/workspaceState";
 
 import type { WorkspaceState } from "../data/workspaceState";
 
@@ -105,6 +111,8 @@ export const saveWorkspace = async (
     encryptionKey,
   };
   appJotaiStore.set(currentWorkspaceAtom, workspace);
+  appJotaiStore.set(lastSyncedSceneVersionAtom, hashElementsVersion(elements));
+  appJotaiStore.set(workspaceDirtyAtom, false);
 
   return workspace;
 };
